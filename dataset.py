@@ -13,7 +13,7 @@
 import os
 import random
 import sys
-
+from pathlib import Path
 import cv2
 import numpy as np
 
@@ -294,7 +294,10 @@ class Yolo_dataset(Dataset):
                 bboxes = np.array(self.truth.get(img_path), dtype=np.float)
                 img_path = os.path.join(self.cfg.dataset_dir, img_path)
             img = cv2.imread(img_path)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            try:
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            except Exception:
+                print(img_path)
             if img is None:
                 continue
             oh, ow, oc = img.shape
@@ -423,11 +426,30 @@ def get_image_id(filename:str) -> int:
     >>> no = f"{int(no):04d}"
     >>> return int(lv+no)
     """
-    raise NotImplementedError("Create your own 'get_image_id' function")
-    lv, no = os.path.splitext(os.path.basename(filename))[0].split("_")
-    lv = lv.replace("level", "")
-    no = f"{int(no):04d}"
-    return int(lv+no)
+    # raise NotImplementedError("Create your own 'get_image_id' function")
+    im_id = ''
+    fn = Path(filename)
+    name = fn.stem
+    res_string = ''
+    if 'crop' in name:
+        code = 1
+        if '_' in name:
+            string = name.split('_')[1]
+        else:
+            string = name.split('p')[1]
+    elif 'person_and_bike_' in name:
+        code = 2
+        string = name.split('_')[-1]
+    else:
+        code = 3
+        string = name.split('_')[-1]
+
+    res_string = str(code) + string
+
+    # lv, no = os.path.splitext(os.path.basename(filename))[0].split("_")
+    # lv = lv.replace("level", "")
+    # no = f"{int(no):04d}"
+    return int(res_string)
 
 
 if __name__ == "__main__":

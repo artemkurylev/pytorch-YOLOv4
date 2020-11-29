@@ -135,13 +135,13 @@ def evaluate_on_coco(cfg, resFile):
                 label = get_class_name(cls_id)
                 draw.text((x1_pred, y1_pred), label, fill=rgb_pred)
                 draw.rectangle([x1_pred, y1_pred, x2_pred, y2_pred], outline=rgb_pred)
-            for annotation in gt_annotation_labels_raw:
-                x1_truth, y1_truth, w, h = annotation['bbox']
-                x2_truth, y2_truth = x1_truth + w, y1_truth + h
-                cls_id = annotation['category_id']
-                label = get_class_name(cls_id)
-                draw.text((x1_truth, y1_truth), label, fill=rgb_label)
-                draw.rectangle([x1_truth, y1_truth, x2_truth, y2_truth], outline=rgb_label)
+            # for annotation in gt_annotation_labels_raw:
+            #     x1_truth, y1_truth, w, h = annotation['bbox']
+            #     x2_truth, y2_truth = x1_truth + w, y1_truth + h
+            #     cls_id = annotation['category_id']
+            #     label = get_class_name(cls_id)
+            #     draw.text((x1_truth, y1_truth), label, fill=rgb_label)
+            #     draw.rectangle([x1_truth, y1_truth, x2_truth, y2_truth], outline=rgb_label)
             actual_image.save("./data/outcome/predictions_{}".format(gt_annotation_image_raw[0]["file_name"]))
         else:
             print('please check')
@@ -172,10 +172,10 @@ def test(model, annotations, cfg):
 
     # do one forward pass first to circumvent cold start
     throwaway_image = Image.open('data/dog.jpg').convert('RGB').resize((model.width, model.height))
-    do_detect(model, throwaway_image, 0.5, 80, 0.4, use_cuda)
+    do_detect(model, throwaway_image, 0.5, 0.4, use_cuda)
     boxes_json = []
 
-    for i, image_annotation in enumerate(images):
+    for i, image_annotation in enumerate(images[:100]):
         logging.info("currently on image: {}/{}".format(i + 1, len(images)))
         image_file_name = image_annotation["file_name"]
         image_id = image_annotation["id"]
@@ -190,14 +190,14 @@ def test(model, annotations, cfg):
             model.cuda()
 
         start = time.time()
-        boxes = do_detect(model, sized, 0.0, 80, 0.4, use_cuda)
+        boxes = do_detect(model, sized, 0.0, 0.4, use_cuda)
         finish = time.time()
         if type(boxes) == list:
             for box in boxes:
                 box_json = {}
-                category_id = box[-1]
-                score = box[-2]
-                bbox_normalized = box[:4]
+                category_id = box[0][-1]
+                score = box[0][-2]
+                bbox_normalized = box[0][:4]
                 box_json["category_id"] = int(category_id)
                 box_json["image_id"] = int(image_id)
                 bbox = []
@@ -210,6 +210,7 @@ def test(model, annotations, cfg):
                     modified_bbox_coord = round(modified_bbox_coord, 2)
                     bbox.append(modified_bbox_coord)
                 box_json["bbox_normalized"] = list(map(lambda x: round(float(x), 2), bbox_normalized))
+                box_json["bbox"] = bbox
                 box_json["bbox"] = bbox
                 box_json["score"] = round(float(score), 2)
                 box_json["timing"] = float(finish - start)
